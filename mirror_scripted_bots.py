@@ -20,6 +20,9 @@ database = os.getenv("DB_DATABASE")
 username = os.getenv("DB_USERNAME")
 password = os.getenv("DB_PASSWORD")
 
+SPACES_KEY = os.getenv("SPACES_KEY")
+SPACES_SECRET = os.getenv("SPACES_SECRET")
+
 import traceback
 
 
@@ -66,8 +69,8 @@ s3 = boto3.client(
         's3',
         region_name='nyc3',  # or other regions
         endpoint_url='https://nyc3.digitaloceanspaces.com',
-        aws_access_key_id='DO00N6496UVWBH6CZRE4',
-        aws_secret_access_key='AxuVjPiryU4wUC2tI8FYd5ZzGTeFpZnxcqrUFtuAIjM'
+        aws_access_key_id=SPACES_KEY,
+        aws_secret_access_key=SPACES_SECRET
     )
 
 #media_url = "https://nyc3.digitaloceanspaces.com/files.azx.argyle.systems/media_attachments/files/110/945/668/446/777/463/original/331bcb3feae74520.jpg"
