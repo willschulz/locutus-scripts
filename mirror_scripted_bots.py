@@ -34,17 +34,20 @@ dbconn = mysql.connector.connect(
       database=database
       )
 
-replay_starttime = 1715902709
+time_dilation = 3
+replay_starttime = 1715902709-28149
 rounded_now = int(round(datetime.now().timestamp(), -1))
-playback_position = (rounded_now - replay_starttime)
+playback_position = (rounded_now - replay_starttime)*time_dilation
 
 #remember to comment out below at launch
 #playback_position = playback_position - (4*60*60)
 
-window_secs = 60
+window_secs = 60*time_dilation
 
-to_toot = pd.read_sql_query('SELECT * FROM mirror_scripts WHERE "posted_yet" = 0 AND "scheduled_for" >= ' + str(playback_position) + ' AND "scheduled_for" < ' + str(playback_position + window_secs) + ' ORDER BY "scheduled_for" ASC;', dbconn)
-update_query = 'UPDATE mirror_scripts SET "posted_yet" = 1 WHERE "posted_yet" = 0 AND "scheduled_for" >= ' + str(playback_position) + ' AND "scheduled_for" < ' + str(playback_position + window_secs) + ';'
+#to_toot = pd.read_sql_query('SELECT * FROM mirror_scripts WHERE "posted_yet" = 0 AND "scheduled_for" >= ' + str(playback_position) + ' AND "scheduled_for" < ' + str(playback_position + window_secs) + ' ORDER BY "scheduled_for" ASC;', dbconn)
+#update_query = 'UPDATE mirror_scripts SET "posted_yet" = 1 WHERE "posted_yet" = 0 AND "scheduled_for" >= ' + str(playback_position) + ' AND "scheduled_for" < ' + str(playback_position + window_secs) + ';'
+to_toot = pd.read_sql_query('SELECT * FROM mirror_scripts WHERE "posted_yet" = 0 AND "scheduled_for" < ' + str(playback_position + window_secs) + ' ORDER BY "scheduled_for" ASC;', dbconn)
+update_query = 'UPDATE mirror_scripts SET "posted_yet" = 1 WHERE "posted_yet" = 0 AND "scheduled_for" < ' + str(playback_position + window_secs) + ';'
 cursor = dbconn.cursor()
 cursor.execute(update_query)
 dbconn.commit()
@@ -60,6 +63,7 @@ print(str(to_toot.shape[0]) + " toots to be tooted!")
 
 
 ### new ###
+import re
 import os
 import pandas as pd
 import boto3
@@ -73,30 +77,12 @@ s3 = boto3.client(
         aws_secret_access_key=SPACES_SECRET
     )
 
-#media_url = "https://nyc3.digitaloceanspaces.com/files.azx.argyle.systems/media_attachments/files/110/945/668/446/777/463/original/331bcb3feae74520.jpg"
-#media_url = str(row['media_url'])
-
-# Extract the bucket name from the URL
-#bucket = re.sub(r"https://nyc3.digitaloceanspaces.com/", "", media_url)
-#bucket = re.sub(r"/.*", "", bucket)
-
-# Extract the object key from the URL
-#object_key = re.sub(r"https://nyc3.digitaloceanspaces.com/", "", media_url)
-#object_key = re.sub(rf"{bucket}/", "", object_key)
-
-#response = s3.get_object(Bucket=bucket, Key=object_key)
-#content = response['Body'].read()
-#media_type = "image/jpeg"# if link.endswith('.jpg') else "image/png"
-#media = mastodon.media_post(content, media_type)
-#posted_status = mastodon.status_post(title, media_ids=media) #worked!
-### new ###
-
 if to_toot.shape[0]>0:
     for index, row in to_toot.iterrows():
         if 'posted_status' in locals():
             del posted_status
         #time.sleep(10) #for testing
-        wait_time = row['scheduled_for'] - (int(datetime.now().timestamp()) - replay_starttime)
+        wait_time = row['scheduled_for'] - (int(datetime.now().timestamp()) - replay_starttime)*time_dilation
         if wait_time>0:
           time.sleep(wait_time)
         these_accounts = pd.read_sql_query("SELECT * FROM mirror_accounts WHERE script_user_id = '" + str(row['user_id']) + "'", dbconn)        
