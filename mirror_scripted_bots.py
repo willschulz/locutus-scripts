@@ -34,8 +34,8 @@ dbconn = mysql.connector.connect(
       database=database
       )
 
-time_dilation = 3
-replay_starttime = 1715902709-28149
+time_dilation = 10
+replay_starttime = 1716156263
 rounded_now = int(round(datetime.now().timestamp(), -1))
 playback_position = (rounded_now - replay_starttime)*time_dilation
 
@@ -93,15 +93,6 @@ if to_toot.shape[0]>0:
             reply_to_muid = pd.read_sql_query("SELECT account_id FROM mirror_bot_posted WHERE reply_pseudoid = '" + str(row['reply_to_pseudoid']) + "' AND instance_base_url = '" + str(account_row['instance_base_url']) + "' ORDER BY bpid DESC LIMIT 1;", dbconn)['account_id'].values[0]
             reply_to_handle = pd.read_sql_query("SELECT name FROM mirror_accounts WHERE id = '" + str(reply_to_muid) + "' ;", dbconn)['name'].values[0]
             if row['media_url'] is not None:
-              response = s3.get_object(Bucket=bucket, Key=object_key)
-              content = response['Body'].read()
-              media = mastodon.media_post(content, media_type)
-              posted_status = mastodon.status_post("@" + str(reply_to_handle) + " " + row['text'].replace("&amp;", "&").replace("&gt;", ">").replace("&lt;", "<"), in_reply_to_id = reply_to_status_id, media_ids=media)
-            else:
-              posted_status = mastodon.status_post("@" + str(reply_to_handle) + " " + row['text'].replace("&amp;", "&").replace("&gt;", ">").replace("&lt;", "<"), in_reply_to_id = reply_to_status_id)
-          else:
-            if row['media_url'] is not None:
-              #media_url = "https://nyc3.digitaloceanspaces.com/files.azx.argyle.systems/media_attachments/files/110/945/668/446/777/463/original/331bcb3feae74520.jpg"
               media_url = str(row['media_url'])
               # Extract the bucket name from the URL
               bucket = re.sub(r"https://nyc3.digitaloceanspaces.com/", "", media_url)
@@ -111,8 +102,24 @@ if to_toot.shape[0]>0:
               object_key = re.sub(rf"{bucket}/", "", object_key)
               response = s3.get_object(Bucket=bucket, Key=object_key)
               content = response['Body'].read()
-              media_type = "image/jpeg"# todo: make flexible
-              media = mastodon.media_post(content, media_type)
+              media = mastodon.media_post(content, row['media_type'])
+              time.sleep(2)
+              posted_status = mastodon.status_post("@" + str(reply_to_handle) + " " + row['text'].replace("&amp;", "&").replace("&gt;", ">").replace("&lt;", "<"), in_reply_to_id = reply_to_status_id, media_ids=media)
+            else:
+              posted_status = mastodon.status_post("@" + str(reply_to_handle) + " " + row['text'].replace("&amp;", "&").replace("&gt;", ">").replace("&lt;", "<"), in_reply_to_id = reply_to_status_id)
+          else:
+            if row['media_url'] is not None:
+              media_url = str(row['media_url'])
+              # Extract the bucket name from the URL
+              bucket = re.sub(r"https://nyc3.digitaloceanspaces.com/", "", media_url)
+              bucket = re.sub(r"/.*", "", bucket)
+              # Extract the object key from the URL
+              object_key = re.sub(r"https://nyc3.digitaloceanspaces.com/", "", media_url)
+              object_key = re.sub(rf"{bucket}/", "", object_key)
+              response = s3.get_object(Bucket=bucket, Key=object_key)
+              content = response['Body'].read()
+              media = mastodon.media_post(content, row['media_type'])
+              time.sleep(2)
               posted_status = mastodon.status_post(row['text'].replace("&amp;", "&").replace("&gt;", ">").replace("&lt;", "<"), media_ids=media)
             else:
               posted_status = mastodon.status_post(row['text'].replace("&amp;", "&").replace("&gt;", ">").replace("&lt;", "<"))
