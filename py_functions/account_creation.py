@@ -215,26 +215,6 @@ def create_account(name, subdomain, domain = argyle.social, type=None, wid=None,
 
 
 
-#old stuff
-# save to db
-    cursor = dbconn.cursor()
-    
-    # Insert the DataFrame into the 'timelines' table
-    for _, row in tdf.iterrows():
-        insert_query = """
-            INSERT INTO timelines (id, created_at, in_reply_to_id, in_reply_to_account_id, visibility, language, uri, url, replies_count, reblogs_count, favourites_count, edited_at, content, reblog, application, media_type, media_url, account_id, account_username, account_acct, scraped_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        values = tuple(row)
-        cursor.execute(insert_query, values)
-    
-    # Commit the changes and close the connection
-    dbconn.commit()
-    cursor.close()
-
-
-print(output)
-
 # R version of remaining stuff to do in the above function:
 # message("Credentialling Accounts")
 # use_condaenv("locutus")

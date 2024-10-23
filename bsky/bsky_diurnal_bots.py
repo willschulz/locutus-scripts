@@ -72,6 +72,7 @@ dbconn.close()
 
 print("There are " + str(bot_count) + " bots...")
 
+
 run_till = round(datetime.now().timestamp()) + 60*minutes
 import traceback
 while round(datetime.now().timestamp()) < run_till:
