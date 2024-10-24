@@ -50,8 +50,10 @@ account_exists = pd.read_sql_query("SELECT * FROM mirror_accounts WHERE instance
 
 def make_clean_name(name):
     #remove anything following a . or @, including the . or @
-    name = name.split('.')[0]
-    name = name.split('@')[0]
+    #name = name.split('.')[0]
+    #name = name.split('@')[0]
+    #remove ".bsky.social" if it's there
+    name = name.replace('.bsky.social', '')
     return name
 
 #if the account doesn't exist
@@ -62,34 +64,45 @@ if not account_exists:
     #removing 'https://' from the beginning
     subdomain = subdomain.split('//')[1]
     domain = '.'.join(instance_base_url.split('.')[1:])
-    py_functions.account_creation.create_account(name = make_clean_name(unposted_post['author_handle']),
+    current_user = py_functions.account_creation.create_account(name = make_clean_name(unposted_post['author_handle']),
                                                 subdomain = subdomain,
                                                 domain = domain,
                                                 type = 'bsky_clone',
                                                 clone_user_id = post_did,
                                                 all_follow = True,
-                                                avatar_image=unposted_post['author_avatar'])
+                                                avatar_image=unposted_post['author_avatar']).iloc[0]
+else:
+    #select the account to post from
+    current_user = pd.read_sql_query(f"SELECT * FROM mirror_accounts WHERE clone_user_id = '" + post_did + "'", dbconn).iloc[0]
 
 # then post the content via the bot
 print(unposted_post['post_text'])
 print("Attempting to post " + unposted_post['post_cid'] + " at " + str(datetime.now()))
 
-account_exists = pd.read_sql_query("SELECT * FROM mirror_accounts WHERE instance_base_url = '" +
-                                   instance_base_url +
-                                   "' AND clone_user_id = '" +
-                                   post_did +
-                                   "'",
-                                   dbconn).shape[0] > 0
+# account_exists = pd.read_sql_query("SELECT * FROM mirror_accounts WHERE instance_base_url = '" +
+#                                    instance_base_url +
+#                                    "' AND clone_user_id = '" +
+#                                    post_did +
+#                                    "'",
+#                                    dbconn).shape[0] > 0
 
-current_user = pd.read_sql_query(f"SELECT * FROM mirror_accounts WHERE clone_user_id = '" + post_did + "'", dbconn).iloc[0]
+
+#pd.read_sql_query("SELECT * FROM mirror_accounts WHERE instance_base_url = '" + instance_base_url + "' AND clone_user_id = '" + post_did +"'", dbconn)
+
+#pd.read_sql_query(f"SELECT * FROM mirror_accounts WHERE clone_user_id = '" + post_did + "'", dbconn)
+
+#current_user = pd.read_sql_query(f"SELECT * FROM mirror_accounts WHERE clone_user_id = '" + post_did + "'", dbconn).iloc[0]
 #current_user
+
+#select the account to post from
+#pd.read_sql_query(f"SELECT * FROM mirror_accounts WHERE script_user_id IS NOT NULL AND id NOT IN ({uids_to_exclude_string}) ORDER BY RAND() LIMIT 1", dbconn)
 
 mastodon = Mastodon(access_token=current_user['token'], api_base_url=current_user['instance_base_url'])
 
-if unposted_post['embed_external_uri']=='' & unposted_post['embed_image_uri']=='':
+if unposted_post['embed_external_uri']=='' and unposted_post['embed_image_uri']=='':
     posted_status = mastodon.status_post(unposted_post['post_text'])
 # logical to check whether there is an embed_external_uri
-if unposted_post['embed_external_uri']!='' & unposted_post['embed_image_uri']=='':
+if unposted_post['embed_external_uri']!='' and unposted_post['embed_image_uri']=='':
     posted_status = mastodon.status_post(unposted_post['post_text'] + "\n" + unposted_post['embed_external_uri'])
 
 # if link.endswith('.jpg') or link.endswith('.png'):

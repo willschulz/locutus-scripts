@@ -172,21 +172,24 @@ def create_account(name, subdomain, domain = 'argyle.social', type=None, wid=Non
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     values = tuple(accounts_toupload.iloc[0])
-    cursor.execute(insert_query, values)
-    dbconn.commit()
-    cursor.close()
-    print("Account has been saved")
-    dbconn.close()
-    if all_follow:
-        #follow all accounts
-        exec_tootctl(cmd = 'accounts follow ' + name, hostname = f"{subdomain}.{domain}", private_key_path = private_key_path)
-    #to do: add the ability to make the account follow people
-    #to do: allow creation of specific network structures
-    if avatar_image:
-        print(f"Uploading avatar for account {name}")
-        upload_avatar(aid, avatar_image)
-    #return the accounts_toupload, as an indicator that the process has succeeeded
-    return accounts_toupload
+    try:
+        cursor.execute(insert_query, values)
+        dbconn.commit()
+        print("Account has been saved successfully")
+        if all_follow:
+            exec_tootctl(cmd = 'accounts follow ' + name, hostname = f"{subdomain}.{domain}", private_key_path = private_key_path)
+        #to do: add the ability to make the account follow people
+        #to do: allow creation of specific network structures
+        if avatar_image:
+            print(f"Uploading avatar for account {name}")
+            upload_avatar(aid, avatar_image)
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+    finally:
+        cursor.close()
+        dbconn.close()
+        #return the accounts_toupload, as an indicator that the process has succeeeded
+        return accounts_toupload
 
 
 # add the ability to add avatars and make everyone follow this new account
