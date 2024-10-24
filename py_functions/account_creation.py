@@ -133,7 +133,7 @@ def exec_tootctl(cmd, hostname, port = 22, username='root', private_key_path='~/
 
 
 # working! double check it does everything it needs to
-def create_account(name, subdomain, domain = 'argyle.social', type=None, wid=None, script_user_id=None, clone_user_id=None, persona=None, private_key_path = '~/.ssh/id_mice_instances', gmail_prefix = 'argyle.systems'):
+def create_account(name, subdomain, domain = 'argyle.social', type=None, wid=None, script_user_id=None, clone_user_id=None, persona=None, private_key_path = '~/.ssh/id_mice_instances', gmail_prefix = 'argyle.systems', all_follow = True, avatar_image = None):
     dbconn = get_db_connection()
     # prepare the command by pasting together the parts
     instance_base_url = f"https://{subdomain}.{domain}"
@@ -175,11 +175,16 @@ def create_account(name, subdomain, domain = 'argyle.social', type=None, wid=Non
     cursor.execute(insert_query, values)
     dbconn.commit()
     cursor.close()
-
-    #accounts_toupload.to_sql("mirror_accounts", dbconn, if_exists = "append", index = False)
-    #user message that the account has been saved
     print("Account has been saved")
     dbconn.close()
+    if all_follow:
+        #follow all accounts
+        exec_tootctl(cmd = 'accounts follow ' + name, hostname = f"{subdomain}.{domain}", private_key_path = private_key_path)
+    #to do: add the ability to make the account follow people
+    #to do: allow creation of specific network structures
+    if avatar_image:
+        print(f"Uploading avatar for account {name}")
+        upload_avatar(aid, avatar_image)
     #return the accounts_toupload, as an indicator that the process has succeeeded
     return accounts_toupload
 
