@@ -5,7 +5,7 @@
 
 instance_base_url = 'https://alpha.argyle.social'
 
-import 
+import py_functions.account_creation
 
 from mastodon import Mastodon
 import pandas as pd
@@ -31,7 +31,10 @@ dbconn = mysql.connector.connect(
 )
 
 
-unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts ORDER BY post_created_at DESC LIMIT 1", dbconn)
+#unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts ORDER BY post_created_at DESC LIMIT 1", dbconn)
+
+#make another sql call to get a purely random post
+unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts ORDER BY RAND() LIMIT 1", dbconn)
 
 #unposted_post
 
@@ -54,4 +57,15 @@ account_exists
 #if not account_exists:
     #create a new account
 
+#split instance_base_url into subdomain and domain
+subdomain = instance_base_url.split('.')[0]
+#removing 'https://' from the beginning
+subdomain = subdomain.split('//')[1]
+domain = '.'.join(instance_base_url.split('.')[1:])
+
+py_functions.account_creation.create_account(name = unposted_post.iloc[0]['author_display_name'],
+               subdomain = subdomain,
+               domain = domain,
+               type = 'bsky_clone',
+               clone_user_id = post_did)
 
