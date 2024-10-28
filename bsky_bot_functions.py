@@ -1,7 +1,8 @@
 # to do later:
 # create table for posted content and check against it when selecting new content
+# wrap this up as a function
 
-# for a given server or set of servers
+# for a given server (or set of servers?)
 
 instance_base_url = 'https://alpha.argyle.social'
 
@@ -54,6 +55,9 @@ def make_clean_name(name):
     #name = name.split('@')[0]
     #remove ".bsky.social" if it's there
     name = name.replace('.bsky.social', '')
+    name = name.replace('.com', '')
+    #replace any remaining . with _
+    name = name.replace('.', '_')
     return name
 
 #if the account doesn't exist
