@@ -334,7 +334,7 @@ db_config = {
 
 import py_functions.diurnal_patterns
 
-#py_functions.diurnal_patterns.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://alpha.argyle.social', 'https://beta.argyle.social'], db_config), event_weight=.01, duration=59)
+py_functions.diurnal_patterns.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://alpha.argyle.social', 'https://beta.argyle.social'], db_config), event_weight=.01, duration=59)
 
 # to do:
 ## make recency, nonduplication, and parallel logging work
@@ -343,27 +343,27 @@ import py_functions.diurnal_patterns
 
 
 # Demo Usage:
-instance_base_urls = ['https://alpha.argyle.social', 'https://beta.argyle.social']
+# instance_base_urls = ['https://alpha.argyle.social', 'https://beta.argyle.social']
 
-import pandas as pd
-import mysql.connector
+# import pandas as pd
+# import mysql.connector
 
-# Fetch an unposted post (example)
-dbconn = mysql.connector.connect(
-    host=host,
-    port=port,
-    user=username,
-    password=password,
-    database=database
-)
+# # Fetch an unposted post (example)
+# dbconn = mysql.connector.connect(
+#     host=host,
+#     port=port,
+#     user=username,
+#     password=password,
+#     database=database
+# )
 
-# unposted_post = pd.read_sql_query(
-#     "SELECT * FROM bsky_posts WHERE posted = 0 ORDER BY RAND() LIMIT 1",
-#     dbconn
-# ).iloc[0]
-unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts ORDER BY RAND() LIMIT 1", dbconn).iloc[0] #todo: make it not be random, but instead determined by server-level settings
+# # unposted_post = pd.read_sql_query(
+# #     "SELECT * FROM bsky_posts WHERE posted = 0 ORDER BY RAND() LIMIT 1",
+# #     dbconn
+# # ).iloc[0]
+# unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts ORDER BY RAND() LIMIT 1", dbconn).iloc[0] #todo: make it not be random, but instead determined by server-level settings
 
-dbconn.close()
+# dbconn.close()
 
-# Call the function
-post_to_instances(instance_base_urls, unposted_post, db_config)
+# # Call the function
+# post_to_instances(instance_base_urls, unposted_post, db_config)
