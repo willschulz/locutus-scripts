@@ -1,69 +1,77 @@
+# Description: This script deletes all posts from a list of accounts. It is intended to be used to clean up the bot's posts from the accounts it mirrors.
 
 from mastodon import Mastodon
 import pandas as pd
 import mysql.connector
-from datetime import datetime
-import random
 import time
-import requests
 import os
+import random
 
-##MySQL connection details
-host = os.getenv("DB_HOST")
-port = os.getenv("DB_PORT")
-database = os.getenv("DB_DATABASE")
-username = os.getenv("DB_USERNAME")
-password = os.getenv("DB_PASSWORD")
+def delete_posts_by_account(account_ids, random_order=False):
+    ##MySQL connection details
+    host = os.getenv("DB_HOST")
+    port = os.getenv("DB_PORT")
+    database = os.getenv("DB_DATABASE")
+    username = os.getenv("DB_USERNAME")
+    password = os.getenv("DB_PASSWORD")
 
-dbconn = mysql.connector.connect(
-      host=host,
-      port=port,
-      user=username,
-      password=password,
-      database=database
-      )
+    dbconn = mysql.connector.connect(
+        host=host,
+        port=port,
+        user=username,
+        password=password,
+        database=database
+    )
 
-#accounts = pd.read_sql_query("SELECT * FROM mirror_accounts WHERE type = 'bot'", dbconn)
-accounts = pd.read_sql_query("SELECT * FROM mirror_accounts", dbconn)
+    if not account_ids:
+        print("No account IDs provided. Exiting.")
+        return
 
-print(str(accounts.shape[0]) + " accounts to wipe!")
+    # Convert list of account_ids into a comma-separated string for the SQL query
+    ids_str = ', '.join(str(account_id) for account_id in account_ids)
+    query = f"SELECT * FROM mirror_accounts WHERE id IN ({ids_str})"
+    accounts = pd.read_sql_query(query, dbconn)
 
-for account_index, account_row in accounts.iterrows():
-    time.sleep(.01)
-    print("Checking account: " + str(account_row["name"]) + " on instance: " + str(account_row["instance_base_url"]))
-    mastodon = Mastodon(access_token = account_row["token"], api_base_url = account_row["instance_base_url"])
-    these_statuses = mastodon.account_statuses(account_row["id"])
-    these_statuses_ids = [item['id'] for item in these_statuses]
-    print("Statuses to purge: " + str(len(these_statuses_ids)))
-    if len(these_statuses_ids)>0:
-      for status_id in these_statuses_ids:
-        mastodon.status_delete(status_id)
-        time.sleep(.01)
-    else:
-      print("Continuing...")
-      continue
+    print(f"{accounts.shape[0]} accounts to wipe!")
 
-# Clear tables
-# Create a cursor object
-cursor = dbconn.cursor()
+    if random_order:
+        #randomly shuffle the order of account_ids
+        accounts = accounts.sample(frac=1).reset_index(drop=True)
 
-# List of table names to delete entries from
-table_names = ["mirror_bot_posted", "mirror_timelines", "mirror_likes", "mirror_follows"]  # Add your table names here
+    for account_index, account_row in accounts.iterrows():
+        time.sleep(0.01)
+        print(f"Checking account: {account_row['name']} on instance: {account_row['instance_base_url']}")
+        try:
+            mastodon = Mastodon(
+            access_token=account_row["token"],
+            api_base_url=account_row["instance_base_url"],
+            request_timeout=10  # Set the timeout to 10 seconds
+            )
+            # Retrieve all statuses for the current account
+            these_statuses = mastodon.account_statuses(account_row["id"])#this may only return the last 20, if so, need to paginate
+            these_statuses_ids = [item['id'] for item in these_statuses]
+            print(f"Statuses to purge: {len(these_statuses_ids)}")
+            
+            if len(these_statuses_ids) == 1:
+                print(status_id)
+                mastodon.status_delete(these_statuses_ids[0])
+            if len(these_statuses_ids) > 1:
+                for status_id in these_statuses_ids:
+                    print(status_id)
+                    try:
+                      mastodon.status_delete(status_id)
+                    except Exception as e:
+                      print(f"Failed to delete status {status_id} for account {account_row['name']}: {e}")
+                    time.sleep(0.01)
+            else:
+                print("Continuing...")
+                continue
+        except Exception as e:
+            print(f"Failed to connect to {account_row['instance_base_url']} for account {account_row['name']}: {e}")
+            continue
 
-# Loop through the table names and delete all entries from each one
-for table_name in table_names:
-    try:
-        cursor.execute(f"DELETE FROM {table_name}")
-        print(f"All entries from table {table_name} deleted successfully.")
-    except mysql.connector.Error as err:
-        print(f"Error deleting entries from {table_name}: {err}")
+    dbconn.close()
 
-# Commit the changes
-dbconn.commit()
-cursor.close()
+ids_to_purge = [113314564704497331, 113314564986904592, 113314565434955899, 113314565757170806, 113314566002812147, 113314566558452360, 113314566613424554, 113314567400941122, 113314567175432372, 113314568136542741, 113314567730834197, 113314568807645262, 113314568314838042, 113314569563612268, 113314569167451316, 113314570284297998, 113314569834020382, 113314571053863859, 113314570404649044, 113314571820864409, 113314570980303546, 113314572543785031, 113314571594940861, 113314573281007202, 113314572163129426, 113314573953802440, 113314572862994848, 113314574646621780, 113314573453089598, 113314575236554832, 113314574011273572, 113314575880493453, 113314574594218788, 113314576517678056, 113314575120536706, 113314577174104940, 113314575634312472, 113314577820444250, 113314576189018937, 113314578470181030, 113314576833520854, 113314579188267362, 113314577386465544, 113314579795024399, 113314577927543185, 113314580421851163, 113314578461199016, 113314581056679429, 113314579044015834, 113314581731469754, 113314579587261733, 113314582419573108, 113314580124009252, 113314583034116314, 113314580829310941, 113314583715070345, 113314581429763772, 113314584330965257, 113314582043836215, 113314584954433185, 113314582607611907, 113314585534089129, 113314583164442353, 113314586164245872, 113314583766942378, 113314586789617759, 113314584321487589, 113314587377511473, 113314585040114783, 113314587995593510, 113314585603965970, 113314588687021398, 113314586154013003, 113314589326782022, 113314586694244413, 113314590001511194, 113314587221881668, 113314590627026136, 113314587751172463, 113314591323868016, 113314588370739585, 113314592012922126, 113314589196456673, 113314592700257743, 113314589803732055, 113314593383527818, 113314590437171411, 113314594030722074, 113314591029187105, 113314594773771267, 113314591624875533, 113314595455786002, 113314592172189729, 113314596227620008, 113314592836287957, 113314596878229106, 113314593384603248, 113314597622844277, 113314593924355327, 113314598254976823, 113314594534174358, 113314598922413225, 113314595048466833, 113314599555663011, 113314595586123679, 113314600210816207, 113314596131991219, 113314600940433472, 113314596768847667, 113314601604496159, 113314597318971804, 113314602279128943, 113314597907838346, 113314602982376494, 113314598484041390, 113314603760491066, 113314599058854056, 113314604485336406, 113314599602889622, 113314605222466950, 113314600194491215, 113314605913852800, 113314600853798817, 113314606647807342, 113314601401559794, 113314607379524785, 113314601979234263, 113314608080459533, 113314602587900871, 113314608867645476, 113314603105969084, 113314609560258003, 113314603690161565, 113314610279526787, 113314604373631383, 113314610954653850, 113314604964876081, 113314611713555625, 113314605550978029, 113314612370470202, 113314606123470471, 113314613117169617, 113314606736363818, 113314613785761349, 113314607299303622, 113314614478988014, 113314607843046680, 113314615155344629, 113314608737059419, 113314615752764684, 113314609301331581, 113314616358582818, 113314609868230712, 113314616911801365, 113314610460480740, 113314617529153636, 113314611066109858, 113314618142103593]
 
-#pd.read_sql_query("SHOW TABLES;", dbconn)
-
-dbconn.close()
-
-
+delete_posts_by_account(ids_to_purge, random_order=True)  # Pass the list of account IDs to delete

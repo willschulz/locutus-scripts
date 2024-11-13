@@ -190,6 +190,3 @@ def create_account(name, subdomain, domain = 'argyle.social', type=None, wid=Non
         dbconn.close()
         #return the accounts_toupload, as an indicator that the process has succeeeded
         return accounts_toupload
-
-
-# add the ability to add avatars and make everyone follow this new account
