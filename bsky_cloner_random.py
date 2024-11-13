@@ -360,7 +360,7 @@ db_config = {
 
 import py_functions.diurnal_patterns
 
-py_functions.diurnal_patterns.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://alpha.argyle.social', 'https://beta.argyle.social'], db_config), event_weight=.0085, duration=60*1)
+py_functions.diurnal_patterns.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://alpha.argyle.social', 'https://beta.argyle.social'], db_config), event_weight=.0085, duration=59)
 
 # to do:
 ## make recency, nonduplication, and parallel logging work
