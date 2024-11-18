@@ -29,7 +29,7 @@ dbconn = mysql.connector.connect(
 
 # Initiate scraping session with token from random user -- probably should use my admin account when I figure out how to remove all rate limits
 user_token = pd.read_sql_query("SELECT token FROM mirror_accounts WHERE aid = 'moth.beta.argyle.social'", dbconn)["token"].values[0]
-mastodon = Mastodon(access_token = user_token, api_base_url = 'https://argyle.systems')
+mastodon = Mastodon(access_token = user_token, api_base_url = 'https://beta.argyle.social')
 t = mastodon.timeline('local', limit = 40)
 
 #all_mastodon_ids_in_db = pd.read_sql_query("SELECT id FROM mirror_accounts", dbconn).values.tolist()
@@ -38,6 +38,9 @@ t = mastodon.timeline('local', limit = 40)
 
 t.sort(key=lambda x: x['created_at'], reverse=True)
 most_recent_post = t[0] if t else None
+
+print(most_recent_post)
+
 post_id_to_reply_to = most_recent_post['id']
 account_acct_to_reply_to = most_recent_post['account']['acct']
 content_to_reply_to = most_recent_post['content']
