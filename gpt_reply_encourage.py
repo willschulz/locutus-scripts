@@ -5,6 +5,10 @@ import mysql.connector
 #import time
 import os
 
+import openai
+
+openai.api_key = os.getenv("OPENAI_KEY")
+
 # MySQL connection details
 host = os.getenv("DB_HOST")
 port = os.getenv("DB_PORT")
