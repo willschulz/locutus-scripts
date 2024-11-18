@@ -9,6 +9,23 @@ import openai
 
 openai.api_key = os.getenv("OPENAI_KEY")
 
+# Define a function to get a response from the OpenAI API
+def get_openai_response(system_instruction, prompt):
+    try:
+        # Call the OpenAI API using the new interface
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",  # Use the appropriate model
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=150  # Adjust the number of tokens as needed
+        )
+        # Extract the text from the response
+        return response
+    except Exception as e:
+        return f"An error occurred: {e}"
+
 # MySQL connection details
 host = os.getenv("DB_HOST")
 port = os.getenv("DB_PORT")
