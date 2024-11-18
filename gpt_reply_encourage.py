@@ -62,6 +62,13 @@ post_id_to_reply_to = most_recent_post['id']
 account_acct_to_reply_to = most_recent_post['account']['acct']
 content_to_reply_to = most_recent_post['content']
 
+system_instruction_supportive = "You are a typical Twitter user. \
+    You are given a tweet and you need to generate a response to the tweet. \
+        The reply must have a internet-friendly spin with abbreviations and cyber lingo.\
+        Do not start with 'Reply:'. \
+        Just write up the tweet response.\
+        Make sure the response is supportive of the original poster's original point, and adds a thematically related point."
+
 text_of_reply = get_openai_response(system_instruction_supportive, content_to_reply_to).choices[0].message.content
 
 posted_status = mastodon.status_post("@" + str(account_acct_to_reply_to) + " " + text_of_reply, in_reply_to_id = post_id_to_reply_to)
