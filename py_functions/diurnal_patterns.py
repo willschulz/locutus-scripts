@@ -86,12 +86,12 @@ def execute_with_diurnal_prob(function_to_run, args=(), kwargs={}, event_weight=
             print("No event.")
         time.sleep(1)
 
-# Example function to run when the event triggers
-def my_function(arg1, arg2):
-    print(f"Function is running with arg1={arg1} and arg2={arg2}")
-    # Simulate some work
-    time.sleep(5)
-    print("Function finished")
+# # Example function to run when the event triggers
+# def my_function(arg1, arg2):
+#     print(f"Function is running with arg1={arg1} and arg2={arg2}")
+#     # Simulate some work
+#     time.sleep(5)
+#     print("Function finished")
 
 # Usage example
 #execute_with_diurnal_prob(my_function, args=(1, 2), event_weight=.1, duration=60)
