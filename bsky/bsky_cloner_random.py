@@ -12,7 +12,7 @@ def post_to_instance(instance_base_url, unposted_post, dbconn):
     from mastodon import Mastodon
     from datetime import datetime
     #import py_functions.account_creation
-    import locutus as lcs
+    from locutus.account_creation import create_account
 
     post_did = unposted_post['author_did']
 
@@ -31,7 +31,7 @@ def post_to_instance(instance_base_url, unposted_post, dbconn):
         subdomain = url_parts[0]
         domain = '.'.join(url_parts[1:])
 
-        current_user = lcs.create_account(
+        current_user = create_account(
             name=make_clean_name(unposted_post['author_handle']),
             subdomain=subdomain,
             domain=domain,
@@ -163,9 +163,12 @@ db_config = {
     'database': database
 }
 
-import locutus as lcs
+#import locutus as lcs
+#lcs.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://beta.argyle.social', 'https://gamma.argyle.social'], db_config), event_weight=.01, duration=59)
 
-lcs.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://beta.argyle.social', 'https://gamma.argyle.social'], db_config), event_weight=.01, duration=59)
+from locutus.diurnal import execute_with_diurnal_prob
+
+execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://beta.argyle.social', 'https://gamma.argyle.social'], db_config), event_weight=.01, duration=59)
 
 # to do:
 ## make recency, nonduplication, and parallel logging work
