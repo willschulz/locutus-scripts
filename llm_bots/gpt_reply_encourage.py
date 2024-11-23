@@ -1,4 +1,4 @@
-bot_name = moth
+bot_name = 'moth'
 
 from mastodon import Mastodon
 import pandas as pd
