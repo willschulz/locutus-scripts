@@ -165,7 +165,7 @@ db_config = {
 
 import locutus as lcs
 
-lcs.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://beta.argyle.social'], db_config), event_weight=.01, duration=59)
+lcs.execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://beta.argyle.social', 'https://gamma.argyle.social'], db_config), event_weight=.01, duration=59)
 
 # to do:
 ## make recency, nonduplication, and parallel logging work
