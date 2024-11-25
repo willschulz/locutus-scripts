@@ -1,10 +1,10 @@
+# FOR WILL
+
 bot_name = 'moth'
 
 from mastodon import Mastodon
 import pandas as pd
-#from datetime import datetime
 import mysql.connector
-#import time
 import os
 
 import openai
@@ -48,14 +48,8 @@ user_token = pd.read_sql_query("SELECT token FROM mirror_accounts WHERE aid = '"
 mastodon = Mastodon(access_token = user_token, api_base_url = 'https://beta.argyle.social')
 t = mastodon.timeline('local', limit = 10)
 
-#all_mastodon_ids_in_db = pd.read_sql_query("SELECT id FROM mirror_accounts", dbconn).values.tolist()
-#all_mastodon_ids_in_db = [item for sublist in all_mastodon_ids_in_db for item in sublist]
-#filtered_posts = [post for post in t if post['account']['id'] not in all_mastodon_ids_in_db]
-
 t.sort(key=lambda x: x['created_at'], reverse=True)
 most_recent_post = t[0] if t else None
-
-#print(most_recent_post)
 
 post_id_to_reply_to = most_recent_post['id']
 account_acct_to_reply_to = most_recent_post['account']['acct']
