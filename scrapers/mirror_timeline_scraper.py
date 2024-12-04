@@ -94,7 +94,7 @@ instances = pd.read_sql_query("SELECT instance_base_url FROM mirror_verses", dbc
 for index, row in instances.iterrows():
   print("Scraping timeslines from instance: " + str(row['instance_base_url']))
   # Initiate scraping session with token from random user -- probably should use my admin account when I figure out how to remove all rate limits
-  user_token = pd.read_sql_query("SELECT token FROM mirror_accounts WHERE type = 'bot' AND instance_base_url = '" + str(row['instance_base_url']) + "' ORDER BY RAND() LIMIT 1", dbconn)["token"].values[0]
+  user_token = pd.read_sql_query("SELECT token FROM mirror_accounts WHERE instance_base_url = '" + str(row['instance_base_url']) + "' ORDER BY RAND() LIMIT 1", dbconn)["token"].values[0]
   mastodon = Mastodon(access_token = user_token, api_base_url = str(row['instance_base_url']))
   
   cursor = dbconn.cursor()
