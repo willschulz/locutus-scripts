@@ -1,4 +1,4 @@
-# FOR WILL
+# FOR YICHIA
 
 bot_name = 'dolphin'
 

@@ -1,5 +1,4 @@
-# FOR BINGXU
-bot_name = 'anglerfish'
+bot_name = 'moth'
 
 from mastodon import Mastodon
 import pandas as pd

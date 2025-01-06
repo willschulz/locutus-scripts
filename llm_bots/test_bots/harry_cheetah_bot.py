@@ -1,4 +1,4 @@
-# FOR WILL
+# FOR HARRY
 
 bot_name = 'cheetah'
 
@@ -67,3 +67,7 @@ text_of_reply = get_openai_response(system_instruction_supportive, content_to_re
 posted_status = mastodon.status_post("@" + str(account_acct_to_reply_to) + " " + text_of_reply, in_reply_to_id = post_id_to_reply_to)
 
 dbconn.close()
+
+print("Found most recent post:", most_recent_post['content'] if most_recent_post else "No posts found")
+print("Generated reply:", text_of_reply)
+print("Posted status:", posted_status)

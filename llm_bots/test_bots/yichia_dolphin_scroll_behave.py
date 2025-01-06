@@ -1,5 +1,5 @@
-# FOR BINGXU
-bot_name = 'anglerfish'
+# FOR YICHIA
+bot_name = 'dolphin'
 
 from mastodon import Mastodon
 import pandas as pd

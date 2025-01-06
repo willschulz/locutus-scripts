@@ -1,4 +1,4 @@
-# FOR WILL
+# FOR FANGJING
 
 bot_name = 'badger'
 
