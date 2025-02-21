@@ -9,7 +9,7 @@ from mysql.connector import pooling
 
 # Debug mode
 DEBUG = False  # Set to False to disable debug logs
-MAX_TABLE_SIZE_GB = 10  # Set maximum allowed table size before exiting
+MAX_TABLE_SIZE_GB = 1  # Set maximum allowed table size before exiting
 
 def debug_log(message):
     if DEBUG:
@@ -60,19 +60,19 @@ def main():
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS bsky_firehose_likes_light (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        did VARCHAR(255),
-        record_created_at VARCHAR(50),
-        deleted_at TIMESTAMP NULL DEFAULT NULL,
-        inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        did CHAR(32),
+        record_created_at DATETIME,
+        deleted_at TIMESTAMP NULL DEFAULT NULL
     );
     """
     cursor.execute(create_table_sql)
     conn.commit()
     debug_log("Ensured table 'bsky_firehose_likes_light' exists.")
 
-    debug_log("Consumer started. Listening on Redis queue 'bsky_like_queue'...")
+    print("Consumer started. Listening on Redis queue 'bsky_like_queue'...")
 
     BATCH_SIZE = 10  # Define batch size
+    global batch_count
     batch_count = 0
     batch = []
 
@@ -109,7 +109,7 @@ def main():
 
             if commit_op == "create":
                 record_obj = commit_obj.get("record", {})
-                record_created_at = record_obj.get("createdAt")
+                record_created_at = record_obj.get("createdAt").replace('T', ' ').split('.')[0]
                 batch.append((did, record_created_at, None))
                 debug_log(f"Queued 'create' for DID={did}")
 
@@ -132,7 +132,7 @@ def main():
                     debug_log(f"Successfully inserted {len(batch)} records.")
                     batch_count += 1
                 except Exception as e:
-                    debug_log(f"Error inserting batch: {e}")
+                    print(f"Error inserting batch: {e}")
                 finally:
                     cursor.close()
                     conn.close()
@@ -140,6 +140,7 @@ def main():
                 batch.clear()  # Reset batch after insertion
 
                 if batch_count % 1000 == 0:
+                    #print(batch_count)
                     table_size = get_table_size()
                     print(f"SQL Table size: {table_size} GB")
                     if table_size >= MAX_TABLE_SIZE_GB:
