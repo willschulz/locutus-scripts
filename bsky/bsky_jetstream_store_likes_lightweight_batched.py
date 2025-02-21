@@ -2,21 +2,13 @@
 
 import os
 import json
-import time
 from datetime import datetime
-import pytz
 import redis
 from mysql.connector import pooling
 
-# Save script start time in Pacific Time Zone
-pacific = pytz.timezone("America/Los_Angeles")
-start_time = datetime.now(pacific).strftime("%Y-%m-%d %H:%M:%S %Z")
-with open("script_start_time.txt", "w") as f:
-    f.write(start_time + "\n")
-
 # Debug mode
 DEBUG = False  # Set to False to disable debug logs
-MAX_TABLE_SIZE_GB = 1  # Set maximum allowed table size before exiting
+MAX_TABLE_SIZE_GB = 40  # Set maximum allowed table size before exiting
 
 def debug_log(message):
     if DEBUG:
@@ -43,7 +35,7 @@ def get_table_size():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024 / 1024, 2) AS size_gb 
+        SELECT ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024 / 1024, 4) AS size_gb 
         FROM information_schema.tables 
         WHERE table_schema = %s AND table_name = 'bsky_firehose_likes_light'
     """, (dbconfig["database"],))
@@ -144,7 +136,7 @@ def main():
 
                 batch.clear()  # Reset batch after insertion
 
-                if batch_count % 100 == 0:
+                if batch_count % 1000 == 0:
                     table_size = get_table_size()
                     print(f"SQL Table size: {table_size} GB")
                     if table_size >= MAX_TABLE_SIZE_GB:

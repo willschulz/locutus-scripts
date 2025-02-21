@@ -2,6 +2,16 @@ import websocket
 import json
 import redis
 
+from datetime import datetime
+import pytz
+
+# Save script start time in Pacific Time Zone
+pacific = pytz.timezone("America/Los_Angeles")
+start_time = datetime.now(pacific).strftime("%Y-%m-%d %H:%M:%S %Z")
+with open("ingest_start_time.txt", "w") as f:
+    f.write(start_time + "\n")
+
+
 def on_message(wsapp, message):
     # Parse the message to see if it's a commit or not
     try:
