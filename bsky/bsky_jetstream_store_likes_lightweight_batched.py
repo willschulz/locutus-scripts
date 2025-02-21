@@ -59,17 +59,16 @@ def main():
     debug_log("Ensuring table 'bsky_firehose_likes_light' exists...")
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS bsky_firehose_likes_light (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        PRIMARY KEY (did, record_created_at),
         did CHAR(32),
-        record_created_at DATETIME,
-        deleted_at TIMESTAMP NULL DEFAULT NULL
+        record_created_at DATETIME
     );
     """
     cursor.execute(create_table_sql)
     conn.commit()
     debug_log("Ensured table 'bsky_firehose_likes_light' exists.")
 
-    print("Consumer started. Listening on Redis queue 'bsky_like_queue'...")
+    debug_log("Consumer started. Listening on Redis queue 'bsky_like_queue'...")
 
     BATCH_SIZE = 10  # Define batch size
     global batch_count
@@ -110,19 +109,30 @@ def main():
             if commit_op == "create":
                 record_obj = commit_obj.get("record", {})
                 record_created_at = record_obj.get("createdAt").replace('T', ' ').split('.')[0]
-                batch.append((did, record_created_at, None))
+                batch.append((did, record_created_at))
                 debug_log(f"Queued 'create' for DID={did}")
 
             elif commit_op == "delete":
-                batch.append((did, None, None))
+                delete_stmt = "DELETE FROM bsky_firehose_likes_light WHERE did = %s"
+                try:
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    cursor.execute(delete_stmt, (did,))
+                    conn.commit()
+                    debug_log(f"Deleted like for DID={did}")
+                except Exception as e:
+                    print(f"Error deleting record: {e}")
+                finally:
+                    cursor.close()
+                    conn.close()
                 debug_log(f"Queued 'delete' for DID={did}")
 
             if len(batch) >= BATCH_SIZE:
                 debug_log(f"Processing batch of {len(batch)} records...")
                 insert_stmt = """
-                    INSERT INTO bsky_firehose_likes_light (did, record_created_at, deleted_at)
-                    VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE deleted_at = VALUES(deleted_at)
+                    INSERT INTO bsky_firehose_likes_light (did, record_created_at)
+                    VALUES (%s, %s)
+                    ON DUPLICATE KEY UPDATE record_created_at = VALUES(record_created_at)
                 """
                 try:
                     conn = get_connection()
@@ -140,7 +150,6 @@ def main():
                 batch.clear()  # Reset batch after insertion
 
                 if batch_count % 1000 == 0:
-                    #print(batch_count)
                     table_size = get_table_size()
                     print(f"SQL Table size: {table_size} GB")
                     if table_size >= MAX_TABLE_SIZE_GB:
