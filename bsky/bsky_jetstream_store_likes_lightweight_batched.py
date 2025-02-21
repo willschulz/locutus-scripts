@@ -5,10 +5,12 @@ import json
 from datetime import datetime
 import redis
 from mysql.connector import pooling
+from datetime import timezone
+from dateutil import parser
 
 # Debug mode
 DEBUG = False  # Set to False to disable debug logs
-MAX_TABLE_SIZE_GB = 40  # Set maximum allowed table size before exiting
+MAX_TABLE_SIZE_GB = 30  # Set maximum allowed table size before exiting
 
 def debug_log(message):
     if DEBUG:
@@ -35,7 +37,7 @@ def get_table_size():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024 / 1024, 4) AS size_gb 
+        SELECT ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024 / 1024, 2) AS size_gb 
         FROM information_schema.tables 
         WHERE table_schema = %s AND table_name = 'bsky_firehose_likes_light'
     """, (dbconfig["database"],))
@@ -105,10 +107,15 @@ def main():
                 continue
 
             if commit_op == "create":
-                record_obj = commit_obj.get("record", {})
-                record_created_at = record_obj.get("createdAt").replace('T', ' ').split('.')[0]
-                batch.append((did, record_created_at))
-                debug_log(f"Queued 'create' for DID={did}")
+                try:
+                    record_obj = commit_obj.get("record", {})
+                    record_created_at_raw = record_obj.get("createdAt")
+                    # Parse the timestamp with timezone awareness and convert to UTC
+                    record_created_at = parser.isoparse(record_created_at_raw).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                    batch.append((did, record_created_at))
+                    debug_log(f"Queued 'create' for DID={did}, Timestamp={record_created_at}")
+                except Exception as e:
+                    print(f"Error processing 'create' operation for DID={did}: {e}")
 
             elif commit_op == "delete":
                 debug_log(f"Ignoring delete operation for DID={did}")
@@ -135,6 +142,7 @@ def main():
                     conn.close()
 
                 batch.clear()  # Reset batch after insertion
+                #print(batch_count)
 
                 if batch_count % 1000 == 0:
                     table_size = get_table_size()
@@ -143,6 +151,7 @@ def main():
                         raise RuntimeError(f"Table size limit exceeded: {table_size} GB (Max: {MAX_TABLE_SIZE_GB} GB)")
     finally:
         print("Shutting down. Closing MySQL connection pool.")
+        conn_pool.close()
 
 if __name__ == "__main__":
     main()
