@@ -3,9 +3,16 @@
 import os
 import json
 import time
-
+from datetime import datetime
+import pytz
 import redis
 from mysql.connector import pooling
+
+# Save script start time in Pacific Time Zone
+pacific = pytz.timezone("America/Los_Angeles")
+start_time = datetime.now(pacific).strftime("%Y-%m-%d %H:%M:%S %Z")
+with open("script_start_time.txt", "w") as f:
+    f.write(start_time + "\n")
 
 # Debug mode
 DEBUG = False  # Set to False to disable debug logs
@@ -59,20 +66,18 @@ def main():
     debug_log("Ensuring table 'bsky_firehose_likes_light' exists...")
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS bsky_firehose_likes_light (
-        id INT AUTO_INCREMENT PRIMARY KEY,
         did CHAR(32),
         record_created_at DATETIME,
-        deleted_at TIMESTAMP NULL DEFAULT NULL
+        PRIMARY KEY (did, record_created_at)
     );
     """
     cursor.execute(create_table_sql)
     conn.commit()
     debug_log("Ensured table 'bsky_firehose_likes_light' exists.")
 
-    print("Consumer started. Listening on Redis queue 'bsky_like_queue'...")
+    debug_log("Consumer started. Listening on Redis queue 'bsky_like_queue'...")
 
     BATCH_SIZE = 10  # Define batch size
-    global batch_count
     batch_count = 0
     batch = []
 
@@ -110,26 +115,26 @@ def main():
             if commit_op == "create":
                 record_obj = commit_obj.get("record", {})
                 record_created_at = record_obj.get("createdAt").replace('T', ' ').split('.')[0]
-                batch.append((did, record_created_at, None))
+                batch.append((did, record_created_at))
                 debug_log(f"Queued 'create' for DID={did}")
 
             elif commit_op == "delete":
-                batch.append((did, None, None))
-                debug_log(f"Queued 'delete' for DID={did}")
+                debug_log(f"Ignoring delete operation for DID={did}")
+                continue
 
             if len(batch) >= BATCH_SIZE:
                 debug_log(f"Processing batch of {len(batch)} records...")
                 insert_stmt = """
-                    INSERT INTO bsky_firehose_likes_light (did, record_created_at, deleted_at)
-                    VALUES (%s, %s, %s)
-                    ON DUPLICATE KEY UPDATE deleted_at = VALUES(deleted_at)
+                    INSERT INTO bsky_firehose_likes_light (did, record_created_at)
+                    VALUES (%s, %s)
+                    ON DUPLICATE KEY UPDATE record_created_at = VALUES(record_created_at)
                 """
                 try:
                     conn = get_connection()
                     cursor = conn.cursor()
                     cursor.executemany(insert_stmt, batch)
                     conn.commit()
-                    debug_log(f"Successfully inserted {len(batch)} records.")
+                    #print(f"Successfully inserted {len(batch)} records.")
                     batch_count += 1
                 except Exception as e:
                     print(f"Error inserting batch: {e}")
@@ -139,14 +144,13 @@ def main():
 
                 batch.clear()  # Reset batch after insertion
 
-                if batch_count % 1000 == 0:
-                    #print(batch_count)
+                if batch_count % 100 == 0:
                     table_size = get_table_size()
                     print(f"SQL Table size: {table_size} GB")
                     if table_size >= MAX_TABLE_SIZE_GB:
                         raise RuntimeError(f"Table size limit exceeded: {table_size} GB (Max: {MAX_TABLE_SIZE_GB} GB)")
     finally:
-        debug_log("Shutting down. Closing MySQL connection pool.")
+        print("Shutting down. Closing MySQL connection pool.")
 
 if __name__ == "__main__":
     main()
