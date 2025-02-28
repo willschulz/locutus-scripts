@@ -8,12 +8,6 @@ import time
 import redis
 import mysql.connector
 
-print(os.getenv("DB_HOST"))
-print(os.getenv("DB_PORT"))
-print(os.getenv("DB_DATABASE"))
-print(os.getenv("DB_USERNAME"))
-print(os.getenv("DB_PASSWORD"))
-
 
 def main():
     # 1) Load DB connection info from environment variables
