@@ -67,7 +67,7 @@ def post_to_instance(instance_base_url, unposted_post, dbconn):
 
     # Mark the post as posted in the database
     #cursor = dbconn.cursor()
-    #update_query = "UPDATE bsky_posts SET posted = 1 WHERE post_cid = %s"
+    #update_query = "UPDATE bsky_posts_feedbased_chrono SET posted = 1 WHERE post_cid = %s"
     #cursor.execute(update_query, (unposted_post['post_cid'],))
     #dbconn.commit()
     #cursor.close()
@@ -137,15 +137,22 @@ def random_bsky_post_cloner(instance_base_urls = ['https://alpha.argyle.social',
     )
 
     # unposted_post = pd.read_sql_query(
-    #     "SELECT * FROM bsky_posts WHERE posted = 0 ORDER BY RAND() LIMIT 1",
+    #     "SELECT * FROM bsky_posts_feedbased_chrono WHERE posted = 0 ORDER BY RAND() LIMIT 1",
     #     dbconn
     # ).iloc[0]
-    unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts ORDER BY RAND() LIMIT 1", dbconn).iloc[0] #todo: make it not be random, but instead determined by server-level settings
-
-    dbconn.close()
+    #unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts_feedbased_chrono ORDER BY RAND() LIMIT 1", dbconn).iloc[0] #todo: make it not be random, but instead determined by server-level settings
+    unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts_feedbased_chrono WHERE bot_posted = 0 ORDER BY post_created_at LIMIT 1", dbconn).iloc[0]
 
     # Call the function
     post_to_instances(instance_base_urls, unposted_post, db_config)
+    #mark the post as posted
+    cursor = dbconn.cursor()
+    update_query = "UPDATE bsky_posts_feedbased_chrono SET bot_posted = 1 WHERE post_cid = %s"
+    cursor.execute(update_query, (unposted_post['post_cid'],))
+    dbconn.commit()
+    cursor.close()
+    dbconn.close()
+    
 
 import os
 host = os.getenv("DB_HOST")
@@ -173,7 +180,7 @@ execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://beta.argyle.s
 # to do:
 ## make recency, nonduplication, and parallel logging work
 ## prevent case where account creation starts twice for the same clone-ee
-## Solution: add a status code to the bsky_posts table that indicates "in progress" or "posted" or "failed" or "duplicate"
+## Solution: add a status code to the bsky_posts_feedbased_chrono table that indicates "in progress" or "posted" or "failed" or "duplicate"
 
 
 # Demo Usage:
@@ -192,10 +199,10 @@ execute_with_diurnal_prob(random_bsky_post_cloner, args=(['https://beta.argyle.s
 # )
 
 # # unposted_post = pd.read_sql_query(
-# #     "SELECT * FROM bsky_posts WHERE posted = 0 ORDER BY RAND() LIMIT 1",
+# #     "SELECT * FROM bsky_posts_feedbased_chrono WHERE posted = 0 ORDER BY RAND() LIMIT 1",
 # #     dbconn
 # # ).iloc[0]
-# unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts ORDER BY RAND() LIMIT 1", dbconn).iloc[0] #todo: make it not be random, but instead determined by server-level settings
+# unposted_post = pd.read_sql_query("SELECT * FROM bsky_posts_feedbased_chrono ORDER BY RAND() LIMIT 1", dbconn).iloc[0] #todo: make it not be random, but instead determined by server-level settings
 
 # dbconn.close()
 
